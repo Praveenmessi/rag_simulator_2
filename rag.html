@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>RAG Simulator</title>
+
+<style>
+    *{
+        margin:0;
+        padding:0;
+        box-sizing:border-box;
+        font-family: Inter, Arial, sans-serif;
+    }
+
+    body{
+        background:#0f172a;
+        color:white;
+        overflow-x:hidden;
+    }
+
+    .container{
+        width:95%;
+        max-width:1400px;
+        margin:auto;
+        padding:30px 0 80px;
+    }
+
+    h1{
+        font-size:42px;
+        margin-bottom:10px;
+        font-weight:800;
+    }
+
+    .subtitle{
+        color:#94a3b8;
+        margin-bottom:30px;
+        line-height:1.6;
+    }
+
+    .main-grid{
+        display:grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap:24px;
+    }
+
+    .card{
+        background:rgba(255,255,255,0.05);
+        border:1px solid rgba(255,255,255,0.08);
+        border-radius:20px;
+        padding:24px;
+        backdrop-filter: blur(12px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .card h2{
+        margin-bottom:16px;
+        font-size:22px;
+    }
+
+    textarea{
+        width:100%;
+        height:180px;
+        background:#020617;
+        color:white;
+        border:1px solid rgba(255,255,255,0.1);
+        border-radius:12px;
+        padding:16px;
+        resize:none;
+        font-size:14px;
+        line-height:1.6;
+    }
+
+    .controls{
+        margin-top:16px;
+        display:flex;
+        gap:16px;
+        flex-wrap:wrap;
+    }
+
+    .control-group{
+        flex:1;
+        min-width:180px;
+    }
+
+    label{
+        display:block;
+        margin-bottom:8px;
+        color:#cbd5e1;
+        font-size:14px;
+    }
+
+    input{
+        width:100%;
+        padding:12px;
+        border-radius:10px;
+        border:none;
+        background:#020617;
+        color:white;
+        border:1px solid rgba(255,255,255,0.1);
+    }
+
+    button{
+        padding:14px 20px;
+        border:none;
+        border-radius:12px;
+        cursor:pointer;
+        font-weight:700;
+        transition:0.3s;
+    }
+
+    .primary{
+        background:linear-gradient(135deg,#3b82f6,#8b5cf6);
+        color:white;
+    }
+
+    .primary:hover{
+        transform:translateY(-2px);
+    }
+
+    .secondary{
+        background:#1e293b;
+        color:white;
+    }
+
+    .pipeline{
+        margin-top:24px;
+        display:grid;
+        grid-template-columns: repeat(5,1fr);
+        gap:16px;
+    }
+
+    .step{
+        background:#111827;
+        padding:18px;
+        border-radius:16px;
+        border:1px solid rgba(255,255,255,0.08);
+        transition:0.4s;
+        opacity:0.5;
+    }
+
+    .step.active{
+        opacity:1;
+        transform:scale(1.02);
+        border-color:#3b82f6;
+        box-shadow:0 0 25px rgba(59,130,246,0.35);
+    }
+
+    .step-number{
+        width:36px;
+        height:36px;
+        border-radius:50%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        background:#2563eb;
+        font-weight:bold;
+        margin-bottom:12px;
+    }
+
+    .step h3{
+        margin-bottom:8px;
+        font-size:16px;
+    }
+
+    .step p{
+        font-size:13px;
+        color:#94a3b8;
+        line-height:1.5;
+    }
+
+    .section-title{
+        margin:24px 0 14px;
+        font-size:18px;
+        color:#e2e8f0;
+    }
+
+    .chunks{
+        display:flex;
+        flex-wrap:wrap;
+        gap:12px;
+    }
+
+    .chunk{
+        background:#1e293b;
+        padding:14px;
+        border-radius:14px;
+        width:calc(50% - 6px);
+        border:1px solid rgba(255,255,255,0.08);
+        transition:0.3s;
+    }
+
+    .chunk:hover{
+        transform:translateY(-3px);
+    }
+
+    .chunk-header{
+        display:flex;
+        justify-content:space-between;
+        margin-bottom:8px;
+        color:#93c5fd;
+        font-size:13px;
+    }
+
+    .embedding{
+        margin-top:12px;
+        display:flex;
+        gap:5px;
+    }
+
+    .bar{
+        height:12px;
+        border-radius:20px;
+        background:linear-gradient(90deg,#3b82f6,#8b5cf6);
+    }
+
+    .query-box{
+        margin-top:20px;
+    }
+
+    .query-input{
+        width:100%;
+        padding:16px;
+        border-radius:12px;
+        background:#020617;
+        border:1px solid rgba(255,255,255,0.1);
+        color:white;
+        margin-bottom:16px;
+        font-size:15px;
+    }
+
+    .retrieved{
+        margin-top:16px;
+    }
+
+    .retrieved-item{
+        background:#13213c;
+        border-left:4px solid #3b82f6;
+        padding:16px;
+        margin-bottom:12px;
+        border-radius:10px;
+    }
+
+    .score{
+        color:#93c5fd;
+        font-size:13px;
+        margin-bottom:8px;
+    }
+
+    .llm-box{
+        margin-top:16px;
+        background:#111827;
+        padding:20px;
+        border-radius:16px;
+        border:1px solid rgba(255,255,255,0.08);
+    }
+
+    .typing{
+        display:inline-block;
+        width:10px;
+        height:10px;
+        border-radius:50%;
+        background:white;
+        animation:blink 1s infinite;
+    }
+
+    @keyframes blink{
+        0%,100%{opacity:0.2;}
+        50%{opacity:1;}
+    }
+
+    .final-answer{
+        margin-top:16px;
+        line-height:1.8;
+        color:#e2e8f0;
+    }
+
+    .legend{
+        margin-top:16px;
+        display:flex;
+        gap:10px;
+        flex-wrap:wrap;
+    }
+
+    .legend span{
+        background:#1e293b;
+        padding:8px 12px;
+        border-radius:999px;
+        font-size:12px;
+        color:#cbd5e1;
+    }
+
+    @media(max-width:1000px){
+        .main-grid{
+            grid-template-columns:1fr;
+        }
+
+        .pipeline{
+            grid-template-columns:1fr;
+        }
+
+        .chunk{
+            width:100%;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>RAG Simulator</h1>
+    <p class="subtitle">
+        Learn how Retrieval-Augmented Generation works step-by-step:
+        Chunking → Embeddings → Vector Search → Retrieval → LLM Generation
+    </p>
+
+    <div class="main-grid">
+
+        <!-- LEFT -->
+        <div>
+
+            <div class="card">
+                <h2>1. Knowledge Base</h2>
+
+                <textarea id="knowledgeBase">
+Sentinel is an enterprise workflow platform used to manage jobs, milestones, dashboards, and KPI tracking across organizations.
+
+RAG stands for Retrieval-Augmented Generation. It retrieves relevant information from external data before generating responses.
+
+Vector databases store embeddings which represent semantic meaning of text.
+
+Chunk overlap helps preserve context between document chunks.
+
+LLMs generate responses using retrieved context added into the prompt.
+
+Embeddings are numerical vector representations of text meaning.
+
+Hybrid search combines keyword search and vector similarity search.
+
+Metadata filtering helps narrow search results based on attributes.
+                </textarea>
+
+                <div class="controls">
+                    <div class="control-group">
+                        <label>Chunk Size</label>
+                        <input type="number" id="chunkSize" value="120">
+                    </div>
+
+                    <div class="control-group">
+                        <label>Chunk Overlap</label>
+                        <input type="number" id="chunkOverlap" value="30">
+                    </div>
+                </div>
+
+                <div class="controls" style="margin-top:20px;">
+                    <button class="primary" onclick="processKnowledgeBase()">
+                        Process Knowledge Base
+                    </button>
+
+                    <button class="secondary" onclick="resetSimulator()">
+                        Reset
+                    </button>
+                </div>
+            </div>
+
+            <div class="pipeline">
+
+                <div class="step" id="step1">
+                    <div class="step-number">1</div>
+                    <h3>Chunking</h3>
+                    <p>Documents are split into smaller chunks.</p>
+                </div>
+
+                <div class="step" id="step2">
+                    <div class="step-number">2</div>
+                    <h3>Embedding</h3>
+                    <p>Chunks are converted into vectors.</p>
+                </div>
+
+                <div class="step" id="step3">
+                    <div class="step-number">3</div>
+                    <h3>Vector DB</h3>
+                    <p>Embeddings are stored for similarity search.</p>
+                </div>
+
+                <div class="step" id="step4">
+                    <div class="step-number">4</div>
+                    <h3>Retrieval</h3>
+                    <p>Relevant chunks are retrieved.</p>
+                </div>
+
+                <div class="step" id="step5">
+                    <div class="step-number">5</div>
+                    <h3>Generation</h3>
+                    <p>LLM generates final answer using retrieved context.</p>
+                </div>
+
+            </div>
+
+            <div class="card" style="margin-top:24px;">
+                <h2>2. Chunks + Embeddings</h2>
+
+                <div class="legend">
+                    <span>Chunk Text</span>
+                    <span>Embedding Simulation</span>
+                    <span>Vector Representation</span>
+                </div>
+
+                <div class="section-title">Generated Chunks</div>
+
+                <div class="chunks" id="chunksContainer"></div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT -->
+        <div>
+
+            <div class="card">
+
+                <h2>3. Query Simulation</h2>
+
+                <div class="query-box">
+                    <input
+                        class="query-input"
+                        id="userQuery"
+                        placeholder="Ask something... Example: What is RAG?"
+                    />
+
+                    <button class="primary" style="width:100%;" onclick="runRAG()">
+                        Run RAG Pipeline
+                    </button>
+                </div>
+
+                <div class="retrieved" id="retrievedResults"></div>
+
+                <div class="llm-box">
+                    <h3 style="margin-bottom:12px;">LLM Final Response</h3>
+
+                    <div id="finalAnswer" class="final-answer">
+                        Waiting for query...
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+let chunksData = [];
+
+function activateStep(step){
+    document.querySelectorAll('.step').forEach(s=>{
+        s.classList.remove('active');
+    });
+
+    document.getElementById(step).classList.add('active');
+}
+
+function processKnowledgeBase(){
+
+    activateStep('step1');
+
+    const text = document.getElementById('knowledgeBase').value;
+
+    const chunkSize = parseInt(document.getElementById('chunkSize').value);
+    const overlap = parseInt(document.getElementById('chunkOverlap').value);
+
+    chunksData = [];
+
+    let start = 0;
+
+    while(start < text.length){
+
+        let end = start + chunkSize;
+
+        let chunk = text.substring(start,end);
+
+        chunksData.push({
+            text: chunk,
+            embedding: generateEmbedding(),
+        });
+
+        start += (chunkSize - overlap);
+    }
+
+    setTimeout(()=>{
+        activateStep('step2');
+    },700);
+
+    setTimeout(()=>{
+        activateStep('step3');
+    },1400);
+
+    renderChunks();
+}
+
+function generateEmbedding(){
+
+    let arr = [];
+
+    for(let i=0;i<8;i++){
+        arr.push(Math.floor(Math.random()*100)+10);
+    }
+
+    return arr;
+}
+
+function renderChunks(){
+
+    const container = document.getElementById('chunksContainer');
+
+    container.innerHTML = '';
+
+    chunksData.forEach((chunk,index)=>{
+
+        const div = document.createElement('div');
+        div.className = 'chunk';
+
+        const bars = chunk.embedding.map(v=>{
+
+            return `
+                <div 
+                    class="bar"
+                    style="width:${v}px">
+                </div>
+            `;
+
+        }).join('');
+
+        div.innerHTML = `
+            <div class="chunk-header">
+                <span>Chunk ${index+1}</span>
+                <span>Vector Embedded</span>
+            </div>
+
+            <div style="font-size:13px; line-height:1.6; color:#cbd5e1;">
+                ${chunk.text}
+            </div>
+
+            <div class="embedding">
+                ${bars}
+            </div>
+        `;
+
+        container.appendChild(div);
+    });
+}
+
+function similarity(query, text){
+
+    query = query.toLowerCase();
+    text = text.toLowerCase();
+
+    const queryWords = query.split(' ');
+
+    let score = 0;
+
+    queryWords.forEach(word=>{
+        if(text.includes(word)){
+            score++;
+        }
+    });
+
+    return score;
+}
+
+function runRAG(){
+
+    activateStep('step4');
+
+    const query = document.getElementById('userQuery').value;
+
+    const retrievedDiv = document.getElementById('retrievedResults');
+
+    let results = chunksData.map(chunk=>{
+
+        return {
+            ...chunk,
+            score: similarity(query, chunk.text)
+        };
+
+    });
+
+    results.sort((a,b)=>b.score-a.score);
+
+    const topResults = results.slice(0,3);
+
+    retrievedDiv.innerHTML = `
+        <div class="section-title">
+            Retrieved Chunks
+        </div>
+    `;
+
+    topResults.forEach((result,index)=>{
+
+        retrievedDiv.innerHTML += `
+            <div class="retrieved-item">
+                <div class="score">
+                    Similarity Score: ${result.score}
+                </div>
+
+                <div>
+                    ${result.text}
+                </div>
+            </div>
+        `;
+    });
+
+    activateStep('step5');
+
+    const combinedContext = topResults
+        .map(r=>r.text)
+        .join(' ');
+
+    const finalAnswer = `
+        <strong>User Query:</strong> ${query}
+        <br><br>
+
+        <strong>Retrieved Context:</strong>
+        <br>
+        ${combinedContext}
+        <br><br>
+
+        <strong>Generated Response:</strong>
+        <br>
+        Based on the retrieved chunks from the vector database,
+        the system found semantically relevant information and used
+        that context to generate this response.
+
+        This demonstrates how RAG retrieves external knowledge
+        before the LLM generates an answer.
+    `;
+
+    document.getElementById('finalAnswer').innerHTML = `
+        Generating <span class="typing"></span>
+    `;
+
+    setTimeout(()=>{
+        document.getElementById('finalAnswer').innerHTML = finalAnswer;
+    },1200);
+}
+
+function resetSimulator(){
+
+    document.querySelectorAll('.step').forEach(s=>{
+        s.classList.remove('active');
+    });
+
+    document.getElementById('chunksContainer').innerHTML = '';
+
+    document.getElementById('retrievedResults').innerHTML = '';
+
+    document.getElementById('finalAnswer').innerHTML = 'Waiting for query...';
+
+    document.getElementById('userQuery').value = '';
+
+    chunksData = [];
+}
+
+processKnowledgeBase();
+
+</script>
+
+</body>
+</html>
